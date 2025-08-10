@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\PostTaskRequest;
 
 class TaskController extends Controller
 {
@@ -20,15 +21,9 @@ class TaskController extends Controller
         return view('tasks.create');
     }
 
-    public function store(Request $request)
+    public function store(PostTaskRequest $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'required|in:not_started,in_progress,pending,completed',
-            'priority' => 'required|in:none,low,medium,high',
-            'due_date' => 'date|nullable',
-        ]);
+        $validated = $request->validated();
 
         $validated['user_id'] = auth()->id();
 
@@ -45,20 +40,14 @@ class TaskController extends Controller
         return view('tasks.edit', compact('task'));
     }
 
-    public function update(Request $request, Task $task)
+    public function update(PostTaskRequest $request, Task $task)
     {
 
         if ($task->user_id !== Auth::id()) {
             abort(403);
         }
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'required|in:not_started,in_progress,pending,completed',
-            'priority' => 'required|in:none,low,medium,high',
-            'due_date' => 'date|nullable',
-        ]);
+        $validated = $request->validated();
 
         $task->update($validated);
 

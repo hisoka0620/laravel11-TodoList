@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Password;
+use App\Http\Requests\UserRegistrationRequest;
+use App\Http\Requests\UserLoginRequest;
 
 class AuthController extends Controller
 {
@@ -15,19 +16,17 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    public function register(Request $request)
+    public function register(UserRegistrationRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
         ]);
+
+        Auth::login($user);
 
         return redirect()->route('dashboard')->with('success', 'Your registration is complete!');
     }
@@ -37,20 +36,17 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(UserLoginRequest $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => ['required', 'string', Password::min(8)],
-        ]);
+        $validated = $request->validated();
 
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::where('email', $validated['email'])->first();
 
         if (!$user) {
             return back()->withErrors(['email' => 'Incorrect email.'])->withInput();
         }
 
-        if (!Hash::check($credentials['password'], $user->password)) {
+        if (!Hash::check($validated['password'], $user->password)) {
             return back()->withErrors(['password' => 'Incorrect password.']);
         }
 
