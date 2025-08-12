@@ -38,25 +38,19 @@ class AuthController extends Controller
 
     public function login(UserLoginRequest $request)
     {
-        $validated = $request->validated();
-
-        $user = User::where('email', $validated['email'])->first();
-
-        if (!$user) {
-            return back()->withErrors(['email' => 'Incorrect email.'])->withInput();
-        }
-
-        if (!Hash::check($validated['password'], $user->password)) {
-            return back()->withErrors(['password' => 'Incorrect password.']);
-        }
+        $credentials = $request->validated();
 
         $remember = $request->filled('remember');
 
-        Auth::login($user, $remember);
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
 
-        $request->session()->regenerate();
+            return redirect()->intended('dashboard');
+        }
 
-        return redirect()->intended('dashboard');
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
     }
 
     public function logout(Request $request)
